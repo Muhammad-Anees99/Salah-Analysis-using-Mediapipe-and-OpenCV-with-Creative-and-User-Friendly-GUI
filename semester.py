@@ -2,8 +2,8 @@ from tkinter import filedialog
 from tkinter import messagebox
 from PoseModule import PoseDetector
 import cv2
-# import numpy as np
-from tkinter import*
+import numpy as np
+from tkinter import *
 from PIL import Image, ImageTk
 import mediapipe as mp
 import pyttsx3
@@ -40,8 +40,6 @@ mpDraw=mp.solutions.drawing_utils
 
 voices = engine.getProperty('voices')
 engine.setProperty('voice', voices[1].id)
-engine.setProperty('language', 'ur')
-engine.setProperty('voice', 'urdu')
 engine.setProperty('rate', 150)
 # engine.say("Loading Started, Please Hold on for few seconds!")
 engine.runAndWait()
@@ -52,13 +50,14 @@ def o_link(linky):
 def read_out():
     true_vars = [key for key, value in Prayer.items() if value]
     if len(true_vars) == 1:
-        engine.say(f'Your Current Pose is {true_vars[0]}')
+        engine.say(true_vars[0])
         engine.runAndWait()
+        
 
 # Function to update the variables in the dictionary and call read_out if necessary
 def update_variables():
     while True:
-        time.sleep(1)
+        time.sleep(3)
         read_out()
 
 ### FUNCTION FOR START LIVE BUTTON ###
@@ -82,18 +81,23 @@ def RecordedVideo():
 
     global win, label1, cap, wid, heit, Analysis, Update, check
     cap.release()
+    canvas = Canvas(win, width=win.winfo_screenwidth(), height=win.winfo_screenheight())
+    canvas.pack()
+    # print(lmlist)
+    canvas.create_image(0, 0, image=bg_image, anchor=NW)
     win.after(1000, lambda: engine.say("Select a RecordedVideo"))
     win.after(1000, engine.runAndWait)
     win.filename = filedialog.askopenfilename(initialdir = "Users\manee\OneDrive\Desktop",  \
     title = "Select Any Recorded Video")
     label1.destroy()
-    label1 = Label(frame_1, width = 600, height= 400)
+    label1 = Label(frame_1, width = 500, height= 400)
     if win.filename:
         cap = cv2.VideoCapture(win.filename)
         label1.place(x=450, y=180)
+        threading.Thread(target=update_variables).start()
         Analysis = True
         Update = True
-        wid = 236
+        wid = 500
         heit = 400
     else:
         cap = cv2.VideoCapture(0)
@@ -308,7 +312,7 @@ def select_img():
         LeftKneeAngle = int(detector.Angle(lmlist,23, 25, 27))#variable name changed
         RightKneeAngle=int(detector.Angle(lmlist,24,26,28))#use of right knee angle
         ElbowAngle = int(detector.Angle(lmlist,11, 13, 15))
-
+        print(ElbowAngle,LeftKneeAngle)
 
         adit = abs(ShoulderRight_Y - HipRight_Y)
         adit = adit/2
@@ -320,15 +324,15 @@ def select_img():
         else:
             Prayer['Takbir'] = False
 
-        if (IndexRight_X>IndexLeft_X) and (LeftKneeAngle > 165) and \
-            (ElbowAngle < 140) and (abs(ThumbLeft_Y-ThumbRight_Y)<15) or ThumbLeft_Y < (lmlist[33][2]+20):#changing made in elbow angle and use of thumb
+        if (LeftKneeAngle > 169 and LeftKneeAngle < 175) and \
+            (ElbowAngle > 20 and ElbowAngle < 50) and (abs(ThumbLeft_Y-ThumbRight_Y)<15) :#changing made in elbow angle and use of thumb
             Prayer['Qayam'] = True
         else:
             Prayer['Qayam'] = False
 
         if (IndexRight_Y > (HipRight_Y + (KneeRight_Y-HipRight_Y)/2) and \
-            (IndexLeft_Y > (HipLeft_Y + (KneeLeft_Y-HipLeft_Y)/2))) and ((LeftKneeAngle) > 165) and \
-            ((RightKneeAngle) > 165) :
+            (IndexLeft_Y > (HipLeft_Y + (KneeLeft_Y-HipLeft_Y)/2))) and ((LeftKneeAngle) > 160) and \
+             (ElbowAngle > 135) :
             Prayer['Ruku'] = True
         else:
             Prayer['Ruku'] = False
@@ -343,7 +347,7 @@ def select_img():
             if  ((Nose_Y > ShoulderRight_Y) or (Nose_Y > ShoulderLeft_Y)) and \
             ((HipRight_Y < ShoulderRight_Y) or (HipLeft_Y < ShoulderLeft_Y)) and \
             (((IndexRight_X > KneeRight_X) or (IndexLeft_X > KneeLeft_X)) or ((IndexRight_X < KneeRight_X) or (IndexLeft_X < KneeLeft_X))) and \
-            (LeftKneeAngle or RightKneeAngle < 80) and (ElbowAngle < 100) and \
+            (LeftKneeAngle  < 70 and LeftKneeAngle  > 50) and (ElbowAngle > 50 and ElbowAngle < 70) and \
             ((ToeLeft_Y or ToeRight_Y) - (KneeLeft_Y or KneeRight_Y) < 10) :
             # (Nose_Y - (IndexLeft_Y or IndexRight_Y) < 10)
                 Prayer['Sajdah'] = True
@@ -351,7 +355,7 @@ def select_img():
                 Prayer['Sajdah'] = False
 
         if (((HipRight_Y > (AnkleRight_Y - adit)) or (HipLeft_Y > (AnkleLeft_Y - adit))) \
-            and ((LeftKneeAngle) < 30) ):# use of elbow angle
+            and (LeftKneeAngle < 20 and LeftKneeAngle > 12) and (ElbowAngle>145 and ElbowAngle<155) ):# use of elbow angle
             Prayer['Atahyaat'] = True
         else:
             Prayer['Atahyaat'] = False
@@ -402,6 +406,7 @@ def select_img():
             nex = ""
         pos = pos + nex
         Next.set(pos)
+        
 
     
     image = Image.fromarray(rgb)
@@ -446,7 +451,6 @@ def Salah_Info():
     global Tak,Qay,Ruk,Qom,Saj,Atah,MainMenu3
     inner_frame = Frame(win)
     inner_frame.place(x=500,y=550)
-    welc3.destroy()
     welcom_destroy()
     Tak= Button(win,text="Takbir",borderwidth=12,font=("Times",14), command= Takb,width = 16, fg = "white",bg = "black", padx=10,pady=10,\
     relief = RAISED)
@@ -475,7 +479,6 @@ def About_Us():
     global welc2,welc4,welc4,welc5,welc6,An_Git,An_Med,Mua_Git,Mua_Med,MainMenu2
     inner_frame = Frame(win)
     inner_frame.place(x=500,y=550)
-    welc3.destroy()
     welcom_destroy()
     An_Git = Button(win,text="GitHub",borderwidth=12,font=("Times",14), command= lambda:o_link(link1),width = 16, fg = "white",bg = "black", padx=10,pady=10,\
     relief = RAISED)
@@ -511,16 +514,12 @@ def About_Us():
     
     
 def welcome():
-    global StartLive, welc1, welc2, welc3, welc4, label1, wid, heit, WelcMsg, Exit, win, StartRecord,About,Salah,Additonal
+    global StartLive, welc1, welc2, welc4, label1, wid, heit, WelcMsg, Exit, win, StartRecord,About,Salah,Additonal
     WelcMsg = StringVar()
     WelcMsg.set("WELCOME TO THE PRAYER ANALYSIS MEDIAPIPE PROJECT")
     welc1 = Message(win,borderwidth=6, justify = CENTER, textvariable = WelcMsg, font = ("Times", 20), \
     fg = "white",bg = "black", relief = RAISED, width = 1000)
     welc1.place(x = 270, y = 120)
-    welc3 = Message(win,borderwidth=6,justify = CENTER, text= "Press START to begin your analysis", \
-    font = ("Times", 16), fg = "white",bg = "black", relief = RAISED,\
-    width = 1000)
-    welc3.place(x = 550, y = 420)
     About = Button(win, text="About us",borderwidth=12,font = ("Times", 14),width = 16, fg = "white",bg = "black", padx=10,pady=10, \
     command=About_Us,relief = RAISED)
     About.place(x=735,y=560)
@@ -547,7 +546,7 @@ def ExitTheProgram():
     win.destroy()
     
 def AnalysisWinUpdate():
-    global v, q, pos, wid, heit, label1, StartLive, welc1, welc2, welc3, welc4
+    global v, q, pos, wid, heit, label1, StartLive, welc1, welc2, welc4
     global DetectionLabel, MainMenu, DrawScl, WelcMsg, DetectMssg, NextMssg, Next,NextVoice
     welc1.destroy()
     welcom_destroy()
@@ -578,7 +577,7 @@ def AnalysisWinUpdate():
     NextMssg = Message(win,borderwidth=6, justify = CENTER, font = ("Times", 18), bg = "black", fg = "white", \
     textvariable= Next, width = 200,relief = RAISED)
     NextMssg.place(x = 200, y = 450)
-    threading.Thread(target=update_variables).start()
+   
 
 #Main Program
 win = Tk()
